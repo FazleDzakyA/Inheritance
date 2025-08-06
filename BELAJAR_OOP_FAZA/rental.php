@@ -331,7 +331,7 @@ class Member extends Pelanggan {
   </style>
 </head>
 <body>
-
+  
 <h2>🚗 Daftar Sewa Kendaraan</h2>
 <hr/>
 
