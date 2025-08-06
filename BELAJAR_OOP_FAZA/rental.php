@@ -104,7 +104,7 @@ class NonMember extends Pelanggan {
         echo "<div class='container'>";
         echo "<div class='transaksi'>";
         echo "<div class='kiri'>";
-        echo "<h3>👤 Pelanggan: {$this->getNama()} ({$this->getStatus()})</h3>";
+        echo "<h3>🤩 Pelanggan: {$this->getNama()} ({$this->getStatus()})</h3>";
         echo "<div class='info'>";
         echo "📦 <strong>Kendaraan:</strong> {$kendaraan->getNamaKendaraan()}<br/>";
         echo "⏳ <strong>Waktu :</strong> $jumlahJam jam<br/>";
@@ -171,6 +171,15 @@ class Member extends Pelanggan {
         echo "</div>";
     }
 }
+
+// DATA KENDARAAN
+$daftar = [
+    new Kendaraan("Toyota Alphard", 250000, "alphard.jpg", "Mobil - Eksklusif"),
+    new Kendaraan("Mazda 3 Hatchback", 120000, "mazda.jpg", "Mobil - City Car"),
+    new Kendaraan("BMW M3", 300000, "bmw.jpg", "Mobil - Sport Car"),
+    new Kendaraan("Honda CBR250RR", 90000, "cbr.jpg", "Motor - Sport 250cc"),
+    new Kendaraan("Sepeda Gunung United", 35000, "sepeda.jpg", "Sepeda - Gunung"),
+];
 ?>
 
 <!DOCTYPE html>
@@ -263,8 +272,8 @@ class Member extends Pelanggan {
       display: flex;
       align-items: stretch;
       justify-content: space-between;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
+      background: rgba(0, 136, 247, 0.05);
+      border-radius: 10px;
       padding: 30px;
       margin-bottom: 40px;
       gap: 25px;
@@ -306,7 +315,7 @@ class Member extends Pelanggan {
       color: #00eaff;
       text-align: center;
       text-shadow: 0 0 4px rgba(0, 245, 255, 0.5);
-      margin-top: 16px;
+      margin-top: 56px;
       padding: 8px 12px;
       border-radius: 10px;
       border: 1px solid #00f5ff;
@@ -318,7 +327,7 @@ class Member extends Pelanggan {
       flex: 1;
       background: rgba(255, 255, 255, 0.04);
       padding: 24px;
-      border-radius: 14px;
+      border-radius: 10px;
       border: 1px solid rgba(0, 255, 255, 0.2);
       box-shadow: inset 0 0 12px rgba(0, 245, 255, 0.1);
       backdrop-filter: blur(4px);
@@ -326,7 +335,7 @@ class Member extends Pelanggan {
     }
 
     .kiri:hover {
-      background: rgba(255, 255, 255, 0.07);
+      background: rgba(14, 255, 235, 0.07);
     }
   </style>
 </head>
@@ -335,24 +344,55 @@ class Member extends Pelanggan {
 <h2>🚗 Daftar Sewa Kendaraan</h2>
 <hr/>
 
+<!-- FORM INPUT -->
+<form method="post" class="container">
+  <h3>🔧 Formulir Sewa Kendaraan</h3>
+  <div class="info">
+    <label>Nama Pelanggan:<br>
+      <input type="text" name="nama" required style="width:100%;padding:8px;border-radius:8px;border:none;">
+    </label><br><br>
+
+    <label>Status Pelanggan:<br>
+      <select name="status" required style="width:100%;padding:8px;border-radius:8px;border:none;">
+        <option value="Member">Membership</option>
+        <option value="NonMember">Non-Membership</option>
+      </select>
+    </label><br><br>
+
+    <label>Jumlah Top-Up (Rp):<br>
+      <input type="number" name="topup" required style="width:100%;padding:8px;border-radius:8px;border:none;">
+    </label><br><br>
+
+    <label>Pilih Kendaraan:<br>
+      <select name="kendaraan" required style="width:100%;padding:8px;border-radius:8px;border:none;">
+        <?php foreach ($daftar as $index => $k) {
+          echo "<option value='$index'>{$k->getNamaKendaraan()} - Rp " . number_format($k->getHargaPerJam(), 0, ',', '.') . "/jam</option>";
+        } ?>
+      </select>
+    </label><br><br>
+
+    <label>Lama Sewa (jam):<br>
+      <input type="number" name="lama" min="1" required style="width:100%;padding:8px;border-radius:8px;border:none;">
+    </label><br><br>
+
+    <button type="submit" style="padding:10px 20px;border-radius:10px;border:none;background:#00ffe1;color:#000;font-weight:bold;cursor:pointer;">🚀 Proses Sewa</button>
+  </div>
+</form>
+
+<hr/>
+
 <?php
-$daftar = [
-    new Kendaraan("Toyota Alphard", 250000, "alphard.jpg", "Mobil - Eksklusif"),
-    new Kendaraan("Mazda 3 Hacthback", 120000, "mazda.jpg", "Mobil - City Car"),
-    new Kendaraan("BMW M3", 300000, "bmw.jpg", "Mobil - Sport Car"),
-    new Kendaraan("Honda CBR250RR", 90000, "cbr.jpg", "Motor - Sport 250cc"),
-    new Kendaraan("Sepeda Gunung United", 35000, "sepeda.jpg", "Sepeda - Gunung"),
-];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nama = $_POST['nama'];
+    $status = $_POST['status'];
+    $topup = (int) $_POST['topup'];
+    $indexKendaraan = (int) $_POST['kendaraan'];
+    $lama = (int) $_POST['lama'];
 
-$member = new Member("Faza");
-$member->topUp(2000000);
-$member->sewa($daftar[2], 5);
-
-echo "<hr/>";
-
-$nonMember = new NonMember("Zafar");
-$nonMember->topUp(790000);
-$nonMember->sewa($daftar[0], 3);
+    $pelanggan = ($status === "Member") ? new Member($nama) : new NonMember($nama);
+    $pelanggan->topUp($topup);
+    $pelanggan->sewa($daftar[$indexKendaraan], $lama);
+}
 ?>
 
 </body>
