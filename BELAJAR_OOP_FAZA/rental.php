@@ -1,11 +1,14 @@
 <?php
 
+//class Kendaraan, Pelanggan, NonMember, Member
+//class untuk menyimpan data kendaraan, pelanggan, dan proses sewa kendaraan
 class Kendaraan {
     private $namaKendaraan;
     private $hargaPerJam;
     private $gambarUrl;
     private $kategori;
 
+    // Constructor untuk inisialisasi data kendaraan
     public function __construct($namaKendaraan, $hargaPerJam, $gambarUrl, $kategori) {
         $this->namaKendaraan = $namaKendaraan;
         $this->hargaPerJam = $hargaPerJam;
@@ -13,6 +16,7 @@ class Kendaraan {
         $this->kategori = $kategori;
     }
 
+    // Getter methods untuk mengambil data kendaraan
     public function getNamaKendaraan() {
         return $this->namaKendaraan;
     }
@@ -30,15 +34,19 @@ class Kendaraan {
     }
 }
 
+//class Pelanggan
+//class untuk menyimpan data pelanggan, status, saldo digital, dan proses sewa kendaraan
 class Pelanggan {
     protected $nama;
     protected $status;
     protected $saldoDigital = 0;
 
+    // Constructor untuk inisialisasi data pelanggan
     public function __construct($nama) {
         $this->nama = $nama;
     }
 
+    // Getter methods untuk mengambil data pelanggan
     public function getNama() {
         return $this->nama;
     }
@@ -51,21 +59,25 @@ class Pelanggan {
         return $this->saldoDigital;
     }
 
+    // Metode untuk menampilkan saldo digital
     public function tampilkanSaldo() {
         echo "<div class='saldo'>💰 Saldo Anda: <strong>Rp " . number_format($this->saldoDigital, 0, ',', '.') . "</strong></div>";
     }
 
+    // Metode untuk top-up saldo digital
     public function topUp($jumlah) {
         $this->saldoDigital += $jumlah;
         echo "<div class='info'>Top-up Rp " . number_format($jumlah, 0, ',', '.') . " berhasil!</div>";
         $this->tampilkanSaldo();
     }
 
+    // Metode untuk menambahkan cashback ke saldo digital
     public function tambahCashback($jumlah) {
         $this->saldoDigital += $jumlah;
         echo "<div class='info'>🎁 Cashback Rp " . number_format($jumlah, 0, ',', '.') . " telah ditambahkan ke saldo digital.</div>";
     }
 
+    // Metode untuk membayar tagihan sewa kendaraan
     public function bayar($jumlahTagihan) {
         if ($this->saldoDigital >= $jumlahTagihan) {
             $this->saldoDigital -= $jumlahTagihan;
@@ -77,13 +89,15 @@ class Pelanggan {
         }
     }
 }
-
+//class NonMember dan Member
+//class untuk pelanggan non-member dan member yang mengimplementasikan metode sewa kendaraan
 class NonMember extends Pelanggan {
     public function __construct($nama) {
         parent::__construct($nama);
         $this->status = "Non-Membership";
     }
 
+    // Metode untuk top-up saldo digital dengan biaya admin
     public function topUp($jumlah) {
         $biayaAdmin = 1500;
         $bersih = $jumlah - $biayaAdmin;
@@ -96,11 +110,13 @@ class NonMember extends Pelanggan {
         $this->tampilkanSaldo();
     }
 
+    // Metode untuk menyewa kendaraan
     public function sewa(Kendaraan $kendaraan, $jumlahJam) {
         $hargaAwal = $kendaraan->getHargaPerJam() * $jumlahJam;
         $cashback = 0.02 * $hargaAwal;
         $total = $hargaAwal;
 
+        // Cek apakah saldo cukup untuk membayar
         echo "<div class='container'>";
         echo "<div class='transaksi'>";
         echo "<div class='kiri'>";
@@ -115,10 +131,12 @@ class NonMember extends Pelanggan {
         echo "🎁 <strong>Cashback (2%):</strong> Rp " . number_format($cashback, 0, ',', '.') . "<br/>";
         echo "</div>";
 
+        // Proses pembayaran
         if ($this->bayar($total)) {
             $this->tambahCashback($cashback);
         }
 
+        // Tampilkan saldo digital
         $this->tampilkanSaldo();
         echo "</div>";
         echo "<div class='kanan'>
@@ -130,18 +148,22 @@ class NonMember extends Pelanggan {
     }
 }
 
+//class Member
+//class untuk pelanggan member yang mengimplementasikan metode sewa kendaraan dengan diskon dan cashback
 class Member extends Pelanggan {
     public function __construct($nama) {
         parent::__construct($nama);
         $this->status = "Membership";
     }
 
+    // Metode untuk top-up saldo digital
     public function sewa(Kendaraan $kendaraan, $jumlahJam) {
         $hargaAwal = $kendaraan->getHargaPerJam() * $jumlahJam;
         $diskon = 0.10 * $hargaAwal;
         $cashback = 0.05 * $hargaAwal;
         $total = $hargaAwal - $diskon;
 
+        // Cek apakah saldo cukup untuk membayar
         echo "<div class='container'>";
         echo "<div class='transaksi'>";
         echo "<div class='kiri'>";
@@ -157,10 +179,12 @@ class Member extends Pelanggan {
         echo "🎁 <strong>Cashback (5%):</strong> Rp " . number_format($cashback, 0, ',', '.') . "<br/>";
         echo "</div>";
 
+        // Proses pembayaran
         if ($this->bayar($total)) {
             $this->tambahCashback($cashback);
         }
 
+        // Tampilkan saldo digital
         $this->tampilkanSaldo();
         echo "</div>";
         echo "<div class='kanan'>
@@ -181,7 +205,7 @@ $daftar = [
     new Kendaraan("Sepeda Gunung United", 35000, "sepeda.jpg", "Sepeda - Gunung"),
 ];
 ?>
-
+<!-- HTML untuk tampilan rental kendaraan -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -340,7 +364,7 @@ $daftar = [
   </style>
 </head>
 <body>
-
+  
 <h2>🚗 Daftar Sewa Kendaraan</h2>
 <hr/>
 
@@ -382,6 +406,8 @@ $daftar = [
 <hr/>
 
 <?php
+// Proses form input
+// Jika form disubmit, ambil data dari input dan buat objek pelanggan
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama = $_POST['nama'];
     $status = $_POST['status'];
