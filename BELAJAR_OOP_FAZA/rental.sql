@@ -24,20 +24,6 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `kendaraan`
---
-
-CREATE TABLE `kendaraan` (
-  `id_kendaraan` int(11) NOT NULL,
-  `namaKendaraan` varchar(255) DEFAULT NULL,
-  `hargaPerJam` float(10,2) DEFAULT NULL,
-  `gambarUrl` varchar(255) DEFAULT NULL,
-  `kategori` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `pelanggan`
 --
 
@@ -53,12 +39,6 @@ CREATE TABLE `pelanggan` (
 --
 
 --
--- Indexes for table `kendaraan`
---
-ALTER TABLE `kendaraan`
-  ADD PRIMARY KEY (`id_kendaraan`);
-
---
 -- Indexes for table `pelanggan`
 --
 ALTER TABLE `pelanggan`
@@ -67,12 +47,6 @@ ALTER TABLE `pelanggan`
 --
 -- AUTO_INCREMENT for dumped tables
 --
-
---
--- AUTO_INCREMENT for table `kendaraan`
---
-ALTER TABLE `kendaraan`
-  MODIFY `id_kendaraan` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `pelanggan`
