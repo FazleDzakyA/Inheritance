@@ -1,580 +1,555 @@
 <?php
+// rental.php
+session_start();
+date_default_timezone_set('Asia/Jakarta');
 
-// Koneksi Database
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "rental";
-
-$conn = new mysqli($host, $user, $pass, $db);
-
-// Cek koneksi
-if ($conn->connect_error) {
-  die("Koneksi gagal: " . $conn->connect_error);
-}
-
-//class Kendaraan, Pelanggan, NonMember, Member
-//class untuk menyimpan data kendaraan, pelanggan, dan proses sewa kendaraan
-class Kendaraan
-{
-  private $namaKendaraan;
-  private $hargaPerJam;
-  private $gambarUrl;
-  private $kategori;
-
-  // Constructor untuk inisialisasi data kendaraan
-  public function __construct($namaKendaraan, $hargaPerJam, $gambarUrl, $kategori)
-  {
-    $this->namaKendaraan = $namaKendaraan;
-    $this->hargaPerJam = $hargaPerJam;
-    $this->gambarUrl = $gambarUrl;
-    $this->kategori = $kategori;
-  }
-
-  // Getter methods untuk mengambil data kendaraan
-  public function getNamaKendaraan()
-  {
-    return $this->namaKendaraan;
-  }
-
-  public function getHargaPerJam()
-  {
-    return $this->hargaPerJam;
-  }
-
-  public function getGambarUrl()
-  {
-    return $this->gambarUrl;
-  }
-
-  public function getKategori()
-  {
-    return $this->kategori;
-  }
-}
-
-//class Pelanggan
-//class untuk menyimpan data pelanggan, status, saldo digital, dan proses sewa kendaraan
-class Pelanggan
-{
-  protected $nama;
-  protected $status;
-  protected $saldoDigital = 0;
-
-  // Constructor untuk inisialisasi data pelanggan
-  public function __construct($nama)
-  {
-    $this->nama = $nama;
-  }
-
-  // Getter methods untuk mengambil data pelanggan
-  public function getNama()
-  {
-    return $this->nama;
-  }
-
-  public function getStatus()
-  {
-    return $this->status;
-  }
-
-  public function getSaldoDigital()
-  {
-    return $this->saldoDigital;
-  }
-
-  // Metode untuk menampilkan saldo digital
-  public function tampilkanSaldo()
-  {
-    echo "<div class='saldo'>💰 Saldo Anda: <strong>Rp " . number_format($this->saldoDigital, 0, ',', '.') . "</strong></div>";
-  }
-
-  // Metode untuk top-up saldo digital
-  public function topUp($jumlah)
-  {
-    $this->saldoDigital += $jumlah;
-    echo "<div class='info'>Top-up Rp " . number_format($jumlah, 0, ',', '.') . " berhasil!</div>";
-    $this->tampilkanSaldo();
-  }
-
-  // Metode untuk menambahkan cashback ke saldo digital
-  public function tambahCashback($jumlah)
-  {
-    $this->saldoDigital += $jumlah;
-    echo "<div class='info'>🎁 Cashback Rp " . number_format($jumlah, 0, ',', '.') . " telah ditambahkan ke saldo digital.</div>";
-  }
-
-  // Metode untuk membayar tagihan sewa kendaraan
-  public function bayar($jumlahTagihan)
-  {
-    if ($this->saldoDigital >= $jumlahTagihan) {
-      $this->saldoDigital -= $jumlahTagihan;
-      echo "<div class='success'>✅ Pembayaran berhasil dipotong dari saldo digital.</div>";
-      return true;
-    } else {
-      echo "<div class='error'>❌ Mohon maaf, saldo Anda kurang.</div>";
-      return false;
-    }
-  }
-}
-
-// class NonMember
-class NonMember extends Pelanggan
-{
-  public function __construct($nama)
-  {
-    parent::__construct($nama);
-    $this->status = "Non-Membership";
-  }
-
-  // Metode untuk top-up saldo digital dengan biaya admin
-  public function topUp($jumlah)
-  {
-    $biayaAdmin = 1500;
-    $bersih = $jumlah - $biayaAdmin;
-    if ($bersih <= 50000) {
-      echo "<div class='error'>Top-up gagal. Jumlah terlalu kecil setelah dikurangi biaya admin.</div>";
-      return;
-    }
-    $this->saldoDigital += $bersih;
-    echo "<div class='info'>Top-up Rp " . number_format($jumlah, 0, ',', '.') . " berhasil! (Biaya admin: Rp1.500)</div>";
-    $this->tampilkanSaldo();
-  }
-
-  // Metode untuk menyewa kendaraan
-  public function sewa(Kendaraan $kendaraan, $jumlahJam)
-  {
-    $hargaAwal = $kendaraan->getHargaPerJam() * $jumlahJam;
-    $cashback = 0.02 * $hargaAwal;
-    $total = $hargaAwal;
-
-    // Cek apakah saldo cukup untuk membayar
-    echo "<div class='container'>";
-    echo "<div class='transaksi'>";
-    echo "<div class='kiri'>";
-    echo "<h3>🤩 Pelanggan: {$this->getNama()} ({$this->getStatus()})</h3>";
-    echo "<div class='info'>";
-    echo "📦 <strong>Kendaraan:</strong> {$kendaraan->getNamaKendaraan()}<br/>";
-    echo "⏳ <strong>Waktu :</strong> $jumlahJam jam<br/>";
-    echo "📁 <strong>Kategori:</strong> {$kendaraan->getKategori()}<br/>";
-    echo "💵 <strong>Harga /Jam:</strong> Rp " . number_format($kendaraan->getHargaPerJam(), 0, ',', '.') . "<br/>";
-    echo "🧾 <strong>Harga Order:</strong> Rp " . number_format($hargaAwal, 0, ',', '.') . "<br/>";
-    echo "💳 <strong>Total Bayar:</strong> Rp " . number_format($total, 0, ',', '.') . "<br/>";
-    echo "🎁 <strong>Cashback (2%):</strong> Rp " . number_format($cashback, 0, ',', '.') . "<br/>";
-    echo "</div>";
-
-    // Proses pembayaran
-    if ($this->bayar($total)) {
-      $this->tambahCashback($cashback);
-    }
-
-    // Tampilkan saldo digital
-    $this->tampilkanSaldo();
-    echo "</div>";
-    echo "<div class='kanan'>
-                <img src='{$kendaraan->getGambarUrl()}' alt='kendaraan' />
-                <div class='nama-kendaraan'>{$kendaraan->getNamaKendaraan()}</div>
-              </div>";
-    echo "</div>";
-    echo "</div>";
-  }
-}
-
-//class Member
-//class untuk pelanggan member yang mengimplementasikan metode sewa kendaraan dengan diskon dan cashback
-class Member extends Pelanggan
-{
-  public function __construct($nama)
-  {
-    parent::__construct($nama);
-    $this->status = "Membership";
-  }
-
-  // Metode untuk top-up saldo digital
-  public function sewa(Kendaraan $kendaraan, $jumlahJam)
-  {
-    $hargaAwal = $kendaraan->getHargaPerJam() * $jumlahJam;
-    $diskon = 0.10 * $hargaAwal;
-    $cashback = 0.05 * $hargaAwal;
-    $total = $hargaAwal - $diskon;
-
-    // Cek apakah saldo cukup untuk membayar
-    echo "<div class='container'>";
-    echo "<div class='transaksi'>";
-    echo "<div class='kiri'>";
-    echo "<h3>👑 Pelanggan: {$this->getNama()} ({$this->getStatus()})</h3>";
-    echo "<div class='info'>";
-    echo "📦 <strong>Kendaraan:</strong> {$kendaraan->getNamaKendaraan()}<br/>";
-    echo "⏳ <strong>Waktu :</strong> $jumlahJam jam<br/>";
-    echo "📁 <strong>Kategori:</strong> {$kendaraan->getKategori()}<br/>";
-    echo "💵 <strong>Harga /Jam:</strong> Rp " . number_format($kendaraan->getHargaPerJam(), 0, ',', '.') . "<br/>";
-    echo "🧾 <strong>Harga Order:</strong> Rp " . number_format($hargaAwal, 0, ',', '.') . "<br/>";
-    echo "🔖 <strong>Diskon (10%):</strong> Rp " . number_format($diskon, 0, ',', '.') . "<br/>";
-    echo "💳 <strong>Total :</strong> Rp " . number_format($total, 0, ',', '.') . "<br/>";
-    echo "🎁 <strong>Cashback (5%):</strong> Rp " . number_format($cashback, 0, ',', '.') . "<br/>";
-    echo "</div>";
-
-    // Proses pembayaran
-    if ($this->bayar($total)) {
-      $this->tambahCashback($cashback);
-    }
-
-    // Tampilkan saldo digital
-    $this->tampilkanSaldo();
-    echo "</div>";
-    echo "<div class='kanan'>
-                <img src='{$kendaraan->getGambarUrl()}' alt='kendaraan' />
-                <div class='nama-kendaraan'>{$kendaraan->getNamaKendaraan()}</div>
-              </div>";
-    echo "</div>";
-    echo "</div>";
-  }
-}
-
-// DATA KENDARAAN
+/* -----------------------------
+   DATA KENDARAAN (SAMA DENGAN ASLI)
+---------------------------------- */
 $daftar = [
-  new Kendaraan("Toyota Alphard", 250000, "alphard.jpg", "Mobil - Eksklusif"),
-  new Kendaraan("Mazda 3 Hatchback", 120000, "mazda.jpg", "Mobil - City Car"),
-  new Kendaraan("BMW M3", 300000, "bmw.jpg", "Mobil - Sport Car"),
-  new Kendaraan("Honda CBR250RR", 90000, "cbr.jpg", "Motor - Sport 250cc"),
-  new Kendaraan("Sepeda Gunung United", 35000, "sepeda.jpg", "Sepeda - Gunung"),
+    ["nama" => "Pilih Kendaraan",        "harga" => 0,      "gambar" => "NOMADIC - CAFE - john zaki.jpg", "kategori" => ""],
+    ["nama" => "Toyota Alphard",         "harga" => 250000,"gambar" => "alphard.jpg", "kategori" => "Mobil - Eksklusif"],
+    ["nama" => "Mazda 3 Hatchback",      "harga" => 120000,"gambar" => "mazda.jpg",   "kategori" => "Mobil - City Car"],
+    ["nama" => "BMW M3",                 "harga" => 300000,"gambar" => "bmw.jpg",     "kategori" => "Mobil - Sport Car"],
+    ["nama" => "Honda CBR250RR",         "harga" => 90000, "gambar" => "cbr.jpg",     "kategori" => "Motor - Sport 250cc"],
+    ["nama" => "Sepeda Gunung United",   "harga" => 35000, "gambar" => "sepeda.jpg",  "kategori" => "Sepeda - Gunung"],
 ];
-?>
 
-<!DOCTYPE html>
-<html lang="id">
+/* -----------------------------
+   HELPERS
+---------------------------------- */
+function esc($s){ return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8'); }
+function rupiah($n){ return 'Rp '.number_format((int)$n,0,',','.'); }
 
-<head>
-  <meta charset="UTF-8">
-  <title>Rental Kendaraan</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    body {
-      margin: 0;
-      padding: 40px;
-      background: linear-gradient(to right, #0f0c29, #302b63, #24243e);
-      font-family: 'Poppins', sans-serif;
-      color: #ffffff;
-    }
+/* -----------------------------
+   INIT SESSION STATE
+---------------------------------- */
+if (!isset($_SESSION['riwayat'])) $_SESSION['riwayat'] = [];
+if (!isset($_SESSION['saldo']))   $_SESSION['saldo']   = 0;
+$saldo_sebelum = $_SESSION['saldo'];
 
-    h2 {
-      text-align: center;
-      font-size: 34px;
-      color: #00f5ff;
-      margin-bottom: 40px;
-      letter-spacing: 1px;
-    }
+/* -----------------------------
+   PROSES FORM: LOGIN / TOPUP / SEWA
+---------------------------------- */
+$popupMsg = null;
+$popupType = 'info'; // success | error | info
 
-    hr {
-      border: none;
-      height: 2px;
-      background: linear-gradient(to right, #00f5ff, #00ffcc);
-      margin: 40px 0;
-    }
-
-    h3 {
-      font-size: 22px;
-      margin-bottom: 12px;
-      color: #ffffff;
-    }
-
-    .info {
-      background: rgba(0, 245, 255, 0.2);
-      border-left: 5px solid #00ffe1;
-      padding: 14px;
-      margin-bottom: 12px;
-      border-radius: 10px;
-      font-size: 16px;
-      box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-    }
-
-    .success {
-      background: rgba(0, 255, 136, 0.12);
-      color: #00ffa2;
-      font-weight: bold;
-      padding: 10px 14px;
-      border-radius: 10px;
-      margin-top: 10px;
-      margin-bottom: 16px;
-    }
-
-    .error {
-      background: rgba(255, 0, 60, 0.12);
-      color: #ff4c4c;
-      font-weight: bold;
-      padding: 10px 14px;
-      border-radius: 10px;
-      margin-top: 10px;
-      margin-bottom: 16px;
-    }
-
-    .saldo {
-      background: linear-gradient(90deg, #00ffbf, #00f5ff);
-      color: #000;
-      border: 3px solid #00ffe1;
-      padding: 16px 26px;
-      border-radius: 16px;
-      font-size: 20px;
-      font-weight: 600;
-      box-shadow: 0 0 14px rgba(0, 255, 191, 0.6);
-      display: inline-block;
-      margin-top: 10px;
-      margin-bottom: 16px;
-      transition: all 0.3s ease;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .transaksi {
-      display: flex;
-      align-items: stretch;
-      justify-content: space-between;
-      background: rgba(0, 136, 247, 0.05);
-      border-radius: 10px;
-      padding: 30px;
-      margin-bottom: 40px;
-      gap: 25px;
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .transaksi:hover {
-      transform: scale(1.02);
-      box-shadow: 0 0 40px rgba(0, 245, 255, 0.4);
-    }
-
-    .transaksi .kanan {
-      background: rgba(0, 245, 255, 0.07);
-      border-radius: 14px;
-      padding: 12px;
-      border: 2px solid #00f5ff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .transaksi .kanan img {
-      width: 320px;
-      height: 250px;
-      object-fit: cover;
-      border-radius: 10px;
-      box-shadow: 0 0 16px rgba(0, 245, 255, 0.25);
-      margin-bottom: 10px;
-      transition: transform 0.3s ease;
-    }
-
-    .nama-kendaraan {
-      font-size: 16px;
-      font-weight: bold;
-      color: #00eaff;
-      text-align: center;
-      text-shadow: 0 0 4px rgba(0, 245, 255, 0.5);
-      margin-top: 56px;
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid #00f5ff;
-      background: rgba(0, 255, 255, 0.08);
-      backdrop-filter: blur(3px);
-    }
-
-    .kiri {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.04);
-      padding: 24px;
-      border-radius: 10px;
-      border: 1px solid rgba(0, 255, 255, 0.2);
-      box-shadow: inset 0 0 12px rgba(0, 245, 255, 0.1);
-      backdrop-filter: blur(4px);
-      transition: background 0.3s;
-    }
-
-    .kiri:hover {
-      background: rgba(14, 255, 235, 0.07);
-    }
-
-    /* Popup error futuristik */
-    .popup-error {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 245, 255, 0.12);
-      border: 2px solid #00f5ff;
-      color: #00f5ff;
-      font-size: 20px;
-      font-weight: 600;
-      padding: 25px 40px;
-      border-radius: 16px;
-      box-shadow: 0 0 30px rgba(0, 245, 255, 0.6);
-      text-align: center;
-      z-index: 9999;
-      animation: fadeIn 0.4s ease, pulseGlow 2s infinite;
-      backdrop-filter: blur(10px);
-    }
-
-    .popup-error button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 10px;
-      background: linear-gradient(90deg, #00ffbf, #00f5ff);
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.2s ease;
-    }
-
-    .popup-error button:hover {
-      transform: scale(1.05);
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translate(-50%, -55%);
-      }
-
-      to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
-      }
-    }
-
-    @keyframes pulseGlow {
-      0% {
-        box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
-      }
-
-      50% {
-        box-shadow: 0 0 40px rgba(0, 245, 255, 0.7);
-      }
-
-      100% {
-        box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
-      }
-    }
-  </style>
-</head>
-
-<body>
-
-  <h2>🚗 Daftar Sewa Kendaraan</h2>
-  <hr />
-
-  <!-- FORM INPUT -->
-  <form method="post" class="container">
-    <h3>🔧 Formulir Sewa Kendaraan</h3>
-    <div class="info">
-      <label>Nama Pelanggan:<br>
-        <input type="text" name="nama" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-      </label><br><br>
-
-      <label>Status Pelanggan:<br>
-        <select name="status" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-          <option value="Member">Membership</option>
-          <option value="NonMember">Non-Membership</option>
-        </select>
-      </label><br><br>
-
-      <label>Jumlah Top-Up (Rp):<br>
-        <input type="number" name="topup" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-      </label><br><br>
-
-      <label>Pilih Kendaraan:<br>
-        <select name="kendaraan" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-          <?php foreach ($daftar as $index => $k) {
-            echo "<option value='$index'>{$k->getNamaKendaraan()} - Rp " . number_format($k->getHargaPerJam(), 0, ',', '.') . "/jam</option>";
-          } ?>
-        </select>
-      </label><br><br>
-
-      <label>Lama Sewa (jam):<br>
-        <input type="number" name="lama" min="1" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-      </label><br><br>
-
-      <button type="submit" style="padding:10px 20px;border-radius:10px;border:none;background:#00ffe1;color:#000;font-weight:bold;cursor:pointer;">🚀 Proses Sewa</button>
-    </div>
-  </form>
-
-  <hr />
-
-  <?php
-  // Proses form input
-  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nama = $_POST['nama'];
-    $status = $_POST['status'];
-    $topup = (int) $_POST['topup'];
-    $indexKendaraan = (int) $_POST['kendaraan'];
-    $lama = (int) $_POST['lama'];
-
-    // Jika member dan topup < 5juta = tidak bisa
-    if ($status === "Member" && $topup < 5000000) {
-      echo "<div class='popup-error' id='popup'>
-                ❌ Gagal Top-Up<br>Minimal Rp 5.000.000 untuk Membership
-                <br><button onclick=\"document.getElementById('popup').style.display='none'\">Tutup</button>
-              </div>
-              <script>
-                setTimeout(()=>{document.getElementById('popup').style.display='none'},4000);
-              </script>";
+// LOGIN
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi']) && $_POST['aksi']==='login') {
+    $nama = trim($_POST['nama'] ?? '');
+    $status = ($_POST['status'] ?? 'NonMember') === 'Member' ? 'Member' : 'NonMember';
+    if ($nama === '') {
+        $popupMsg = "Nama tidak boleh kosong.";
+        $popupType = 'error';
     } else {
-      // buat object
-      $pelanggan = ($status === "Member") ? new Member($nama) : new NonMember($nama);
-      $pelanggan->topUp($topup);
-      $pelanggan->sewa($daftar[$indexKendaraan], $lama);
-
-      // simpan ke database
-      $jenis = $daftar[$indexKendaraan]->getNamaKendaraan();
-      $saldoAkhir = $pelanggan->getSaldoDigital();
-
-      // status db harus sesuai enum ('adalah_member','bukan_member')
-      $statusDb = ($status === "Member") ? "Membership" : "Non-Membership";
-
-      $stmt = $conn->prepare("INSERT INTO pelanggan (nama, status, saldoDigital, Jenis_kendaraan) VALUES (?,?,?,?)");
-      $stmt->bind_param("ssds", $nama, $statusDb, $saldoAkhir, $jenis);
-      $stmt->execute();
-      $stmt->close();
-
-      echo "<div class='success'>✅ Data pelanggan berhasil disimpan ke database!</div>";
+        $_SESSION['nama'] = $nama;
+        $_SESSION['status'] = $status;
+        // keep saldo & riwayat if existing
+        $popupMsg = "Login berhasil! Selamat datang, {$nama}.";
+        $popupType = 'success';
     }
-  }
-  ?>
+}
 
-  <hr />
-  <h2>📊 Data Pelanggan di Database</h2>
-  <div class="container">
-    <table border="1" cellpadding="10" cellspacing="0" style="width:100%;background:#fff;color:#000;border-collapse:collapse;">
-      <tr style="background:#00f5ff;color:#000;">
-        <th>ID</th>
-        <th>Nama</th>
-        <th>Status</th>
-        <th>Saldo Digital</th>
-        <th>Jenis Kendaraan</th>
-      </tr>
-      <?php
-      $result = $conn->query("SELECT * FROM pelanggan");
-      if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-          echo "<tr>
-              <td>{$row['id_Pelanggan']}</td>
-              <td>{$row['nama']}</td>
-              <td>{$row['status']}</td>
-              <td>Rp " . number_format($row['saldoDigital'], 0, ',', '.') . "</td>
-              <td>{$row['Jenis_kendaraan']}</td>
-            </tr>";
+// TOP-UP (via modal atau form)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi']) && $_POST['aksi']==='topup') {
+    $nom = (int)($_POST['nominal'] ?? 0);
+    if ($nom < 50000) {
+        $popupMsg = "Top-up gagal — minimal Rp50.000.";
+        $popupType = 'error';
+    } else {
+        $_SESSION['saldo'] += $nom;
+        $popupMsg = "Top-up berhasil: +".rupiah($nom)." (Saldo sekarang: ".rupiah($_SESSION['saldo']).")";
+        $popupType = 'success';
+    }
+}
+
+// SEWA (form utama)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi']) && $_POST['aksi']==='sewa' && isset($_SESSION['nama'])) {
+    $idx = (int)($_POST['kendaraan'] ?? 0);
+    $lama = max(1, (int)($_POST['lama'] ?? 1));
+    $topup = max(0, (int)($_POST['topup'] ?? 0));
+
+    // apply topup if provided (must be >= 50k)
+    if ($topup > 0) {
+        if ($topup < 50000) {
+            $popupMsg = "Top-up gagal — minimal Rp50.000.";
+            $popupType = 'error';
+        } else {
+            $_SESSION['saldo'] += $topup;
+            $popupMsg = "Top-up berhasil +".rupiah($topup).".";
+            $popupType = 'success';
         }
-      } else {
-        echo "<tr><td colspan='5'>Belum ada data pelanggan</td></tr>";
-      }
-      ?>
-    </table>
+    }
+
+    $kend = $daftar[$idx] ?? $daftar[0];
+    if ($kend['harga'] <= 0) {
+        $popupMsg = "Pilih kendaraan yang valid.";
+        $popupType = 'error';
+    } else {
+        $hargaAwal = $kend['harga'] * $lama;
+        // aturan: member diskon 10%, cashback 5% dari hargaAwal
+        // non-member cashback 2%, no discount
+        $status = $_SESSION['status'] ?? 'NonMember';
+        $diskon = ($status === 'Member') ? 0.10 * $hargaAwal : 0;
+        $cashback = ($status === 'Member') ? 0.05 * $hargaAwal : 0.02 * $hargaAwal;
+        $total = $hargaAwal - $diskon;
+
+        // coba bayar
+        if ($_SESSION['saldo'] >= $total) {
+            // potong pembayaran
+            $_SESSION['saldo'] -= $total;
+            // tambahkan cashback
+            $_SESSION['saldo'] += round($cashback);
+            // simpan riwayat
+            $ent = [
+                'tanggal'  => date("d-m-Y H:i:s"),
+                'nama'     => $_SESSION['nama'],
+                'kendaraan'=> $kend['nama'],
+                'lama'     => $lama,
+                'hargaJam' => $kend['harga'],
+                'hargaAwal'=> $hargaAwal,
+                'diskon'   => $diskon,
+                'cashback' => $cashback,
+                'total'    => $total,
+                'gambar'   => $kend['gambar'],
+                'status'   => $status
+            ];
+            array_unshift($_SESSION['riwayat'], $ent);
+            $_SESSION['last_order'] = $ent;
+            $popupMsg = "Sewa berhasil! Total ".rupiah($total).". Cashback ".rupiah(round($cashback))." telah diperoleh.";
+            $popupType = 'success';
+        } else {
+            $popupMsg = "Saldo tidak cukup. Total ".rupiah($total).". Silakan top-up.";
+            $popupType = 'error';
+        }
+    }
+}
+
+// LOGOUT
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header("Location: rental.php");
+    exit;
+}
+?>
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rent Garage — Sewa Kendaraan</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#0e0f12; --bg2:#0a0b0d;
+  --panel:rgba(255,255,255,.04);
+  --primary:#00eaff; --primary2:#00ffbf; --text:#eef6fa;
+  --muted:#9fb0bf; --danger:#ff6b6b; --success:#2ee6a6;
+  --select-bg: rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:'Poppins',sans-serif; color:var(--text);
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(0,234,255,.04), transparent 60%),
+    radial-gradient(1000px 500px at 90% 10%, rgba(0,255,191,.03), transparent 60%),
+    linear-gradient(135deg,var(--bg1),var(--bg2));
+  min-height:100vh; padding:28px;
+}
+.container{max-width:1150px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.logo{color:var(--primary); font-weight:700; font-size:20px}
+.badge{color:#000;background:linear-gradient(90deg,var(--primary2),var(--primary));padding:8px 12px;border-radius:10px;font-weight:700}
+
+/* panels */
+.panel{
+  background:var(--panel); border-radius:14px; padding:18px;
+  border:1px solid rgba(255,255,255,.06); box-shadow:0 12px 40px rgba(2,6,23,0.6);
+}
+
+/* login */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:78vh}
+.login-card{width:380px;border-radius:14px;padding:22px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04)}
+.login-card h2{margin-bottom:6px;color:var(--primary)}
+.muted{color:var(--muted);font-size:14px}
+
+/* form */
+label{display:block;margin:10px 0 6px;font-weight:600;color:var(--muted)}
+input[type="text"], input[type="number"], select{
+  width:100%; padding:12px 14px; border-radius:12px; border:none; outline:none;
+  background:var(--select-bg); color:var(--text); font-size:14px;
+  transition: box-shadow .12s ease, transform .06s;
+  -webkit-appearance:none; -moz-appearance:none; appearance:none;
+}
+input:focus, select:focus{box-shadow:0 10px 30px rgba(0,234,255,.04)}
+
+/* layout */
+.cols{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+@media(max-width:980px){ .cols{grid-template-columns:1fr} }
+
+/* main controls */
+.grid{display:grid;gap:14px}
+.grid-2{grid-template-columns:1fr 1fr;gap:12px}
+
+/* select appearance */
+.select-wrap{position:relative}
+.select-wrap:after{content:"▾";position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--primary);pointer-events:none}
+
+/* buttons */
+.btn{
+  border:none;padding:12px 14px;border-radius:12px;cursor:pointer;font-weight:700;background:linear-gradient(90deg,var(--primary2),var(--primary));color:#000;
+}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.06);color:var(--text)}
+
+/* saldo */
+.saldo{display:inline-block;padding:10px 14px;border-radius:12px;background:linear-gradient(90deg, rgba(0,234,255,.06), rgba(0,255,191,.03));color:#001;font-weight:800}
+
+/* preview card */
+.order-card{display:grid;grid-template-columns:1fr .9fr;gap:16px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,.03)}
+@media(max-width:920px){ .order-card{grid-template-columns:1fr} }
+
+.order-left .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(0,234,255,.09);color:var(--primary)}
+.order-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.label{color:var(--muted);font-size:13px}
+.value{font-weight:700}
+.total{font-size:18px;color:#fff;text-shadow:0 0 10px rgba(0,234,255,.24)}
+
+/* IMAGE area: make image big & visible */
+.order-right{border-radius:12px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.02);padding:8px}
+.order-right .imgbox{width:100%;height:280px;overflow:hidden;border-radius:10px}
+.order-right img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* detail order (last order) */
+.order-detail{display:flex;gap:16px;align-items:flex-start;margin-top:12px;border-radius:12px;padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border:1px solid rgba(255,255,255,0.03)}
+.order-detail .imgbox-lg{width:45%;min-width:220px;height:220px;overflow:hidden;border-radius:12px}
+.order-detail img{width:100%;height:100%;object-fit:cover}
+
+/* table */
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px;text-align:left}
+th{color:var(--primary)}
+
+/* popup */
+.popup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter: blur(6px)}
+.popup .box{min-width:320px;max-width:420px;background:#0c1116;border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,.05)}
+.box.success{border-color:rgba(46,230,166,.25)}
+.box.error{border-color:rgba(255,107,107,.25)}
+
+/* small */
+.muted-small{color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">🚗 Rent Garage</div>
+    <div>
+      <?php if(isset($_SESSION['nama'])): ?>
+        <span class="saldo" id="saldoHeader"><?php echo rupiah($_SESSION['saldo']); ?></span>
+        <a href="?logout=1" class="btn" style="margin-left:12px">Keluar</a>
+      <?php endif; ?>
+    </div>
   </div>
 
-</body>
+  <?php if(!isset($_SESSION['nama'])): ?>
+    <!-- LOGIN -->
+    <div class="login-wrap">
+      <div class="login-card panel">
+        <h2>🔐 Masuk untuk Sewa</h2>
+        <p class="muted">Isi nama & pilih status (Member / Non-Member).</p>
+        <form method="post" style="margin-top:12px">
+          <input type="hidden" name="aksi" value="login">
+          <label>Nama</label>
+          <input type="text" name="nama" placeholder="Nama Anda" required>
 
+          <label>Status Pelanggan</label>
+          <div class="select-wrap">
+            <select name="status" required>
+              <option value="Member">Member</option>
+              <option value="NonMember">Non-Member</option>
+            </select>
+          </div>
+
+          <div style="margin-top:12px"><button class="btn" type="submit">Masuk</button></div>
+        </form>
+      </div>
+    </div>
+
+  <?php else: ?>
+    <!-- MAIN -->
+    <div class="cols">
+      <!-- LEFT: form -->
+      <section class="panel">
+        <h3 style="margin:0 0 6px">🔧 Formulir Sewa</h3>
+        <p class="muted" style="margin-top:-6px">Nama diisi otomatis sesuai login (tidak dapat diubah).</p>
+
+        <form method="post" id="form-sewa" class="grid" style="margin-top:12px">
+          <input type="hidden" name="aksi" value="sewa">
+
+          <div>
+            <label>Nama Pemesan</label>
+            <input type="text" name="nama_display" value="<?php echo esc($_SESSION['nama']); ?>" readonly>
+          </div>
+
+          <div>
+            <label>Status</label>
+            <input type="text" value="<?php echo ($_SESSION['status']==='Member'?'👑 Member':'🙂 Non-Member'); ?>" readonly>
+          </div>
+
+          <div>
+            <label>Pilih Kendaraan</label>
+            <div class="select-wrap">
+              <select name="kendaraan" id="kendSelect" required>
+                <?php foreach($daftar as $i=>$k): ?>
+                  <option value="<?php echo $i; ?>"><?php echo esc($k['nama']); ?> — Rp <?php echo number_format($k['harga'],0,',','.'); ?>/jam</option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label>Lama Sewa (jam)</label>
+              <input type="number" name="lama" id="lama" min="1" value="1" required>
+            </div>
+            <div>
+              <label>Top-Up (opsional)</label>
+              <input type="number" name="topup" id="topup" min="0" placeholder="Contoh: 500000">
+              <small class="muted-small"><?php echo ($_SESSION['status']==='Member' ? 'Member dapat top-up bebas (min 50.000)' : 'Non-member top-up minimal 50.000'); ?></small>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button class="btn" type="submit">✅ Proses Sewa</button>
+            <button type="button" id="openTopup" class="btn ghost">Top-up Manual</button>
+          </div>
+        </form>
+
+        <!-- LAST ORDER -->
+        <?php if(!empty($_SESSION['last_order'])):
+            $lo = $_SESSION['last_order'];
+        ?>
+          <div style="margin-top:16px">
+            <h4 style="margin:6px 0">📦 Pesanan Terakhir</h4>
+            <div class="order-detail">
+              <div class="imgbox-lg"><img src="<?php echo esc($lo['gambar']); ?>" alt=""></div>
+              <div style="flex:1">
+                <h3 style="margin:0 0 6px"><?php echo esc($lo['kendaraan']); ?></h3>
+                <div class="muted-small">Pemesan: <?php echo esc($lo['nama']); ?> • <?php echo esc($lo['status']); ?></div>
+                <div style="height:10px"></div>
+                <div class="row" style="display:flex;flex-direction:column;gap:8px;padding:0">
+                  <div style="display:flex;justify-content:space-between"><div class="label">Durasi</div><div class="value"><?php echo intval($lo['lama']); ?> jam</div></div>
+                  <div style="display:flex;justify-content:space-between"><div class="label">Harga/Jam</div><div class="value"><?php echo rupiah($lo['hargaJam']); ?></div></div>
+                  <div style="display:flex;justify-content:space-between"><div class="label">Harga Awal</div><div class="value"><?php echo rupiah($lo['hargaAwal']); ?></div></div>
+                  <div style="display:flex;justify-content:space-between"><div class="label">Diskon</div><div class="value"><?php echo $lo['diskon']>0?rupiah($lo['diskon']):'-'; ?></div></div>
+                  <div style="display:flex;justify-content:space-between"><div class="label">Cashback</div><div class="value"><?php echo $lo['cashback']>0?rupiah(round($lo['cashback'])):'-'; ?></div></div>
+                  <div style="height:8px"></div>
+                  <div class="total-row"><div>Total Bayar</div><div><?php echo rupiah($lo['total']); ?></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <?php endif; ?>
+
+      </section>
+
+      <!-- RIGHT: preview & riwayat -->
+      <aside class="panel">
+        <h3 style="margin:0 0 6px">🧾 Preview Realtime</h3>
+        <p class="muted" style="margin-top:-6px">Periksa gambar & perhitungan sebelum submit.</p>
+
+        <div class="order-card" style="margin-top:12px">
+          <div class="order-left">
+            <div class="order-title">
+              <span class="chip"><?php echo ($_SESSION['status']==='Member'?'👑 Member':'🙂 Non-Member'); ?></span>
+              <h3 id="pvNama" style="margin:8px 0 4px"><?php echo esc($_SESSION['nama']); ?></h3>
+              <p class="muted">Preview perhitungan sebelum submit</p>
+            </div>
+
+            <div class="order-grid" style="margin-top:12px">
+              <div><div class="label">Kendaraan</div><div class="value" id="pvKend">-</div></div>
+              <div><div class="label">Kategori</div><div class="value" id="pvKat">-</div></div>
+              <div><div class="label">Harga/Jam</div><div class="value" id="pvHarga">-</div></div>
+              <div><div class="label">Durasi</div><div class="value" id="pvDur">-</div></div>
+              <div><div class="label">Harga Order</div><div class="value" id="pvAwal">-</div></div>
+              <div id="pvDiskRow" style="display:none"><div class="label">Diskon</div><div class="value" id="pvDisk">-</div></div>
+              <div><div class="label">Total Bayar</div><div class="value total" id="pvTotal">-</div></div>
+              <div><div class="label">Cashback</div><div class="value" id="pvCash">-</div></div>
+              <div><div class="label">Saldo Saat Ini</div><div class="value" id="pvSaldoNow"><?php echo rupiah($_SESSION['saldo']); ?></div></div>
+              <div><div class="label">Estimasi Sisa Saldo</div><div class="value" id="pvSaldoAfter">-</div></div>
+            </div>
+          </div>
+
+          <div class="order-right">
+            <div class="imgbox"><img id="pvImg" src="<?php echo esc($daftar[0]['gambar']); ?>" alt="preview"></div>
+            <div style="padding-top:10px"><div class="chip" id="pvTag">—</div></div>
+          </div>
+        </div>
+
+        <!-- RIWAYAT -->
+        <div style="margin-top:14px">
+          <h4 style="margin:0 0 8px">📜 Riwayat Transaksi</h4>
+          <?php if(empty($_SESSION['riwayat'])): ?>
+            <div class="muted-small">Belum ada transaksi.</div>
+          <?php else: ?>
+            <table>
+              <thead><tr><th>Tanggal</th><th>Kendaraan</th><th>Lama</th><th>Total</th></tr></thead>
+              <tbody>
+                <?php foreach($_SESSION['riwayat'] as $r): ?>
+                  <tr>
+                    <td><?php echo esc($r['tanggal']); ?></td>
+                    <td><?php echo esc($r['kendaraan']); ?></td>
+                    <td><?php echo intval($r['lama']); ?> jam</td>
+                    <td><?php echo rupiah($r['total']); ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          <?php endif; ?>
+        </div>
+
+      </aside>
+    </div>
+  <?php endif; ?>
+</div>
+
+<!-- POPUP overlay -->
+<div id="popup" class="popup">
+  <div class="box" id="popupBox">
+    <h4 id="popupTitle">Info</h4>
+    <p id="popupMsg">Pesan</p>
+    <div style="margin-top:12px"><button class="btn" onclick="closePopup()">Tutup</button></div>
+  </div>
+</div>
+
+<!-- TOPUP modal -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:999">
+  <div style="background:#0b1116;padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);width:320px">
+    <h4 style="margin:0 0 8px">Top-up Saldo</h4>
+    <form method="post" id="modalForm">
+      <input type="hidden" name="aksi" value="topup">
+      <label style="color:var(--muted);font-weight:600">Nominal (min Rp50.000)</label>
+      <input type="number" name="nominal" id="modalNom" min="50000" required style="margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--select-bg);color:var(--text);width:100%">
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn" type="submit">Top-up</button>
+        <button type="button" class="btn ghost" onclick="closeModal()">Batal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// DATA kendaraan dari server
+const DATA = <?php echo json_encode($daftar, JSON_UNESCAPED_UNICODE); ?>;
+const isMember = <?php echo json_encode( (isset($_SESSION['status']) && $_SESSION['status']==='Member') ); ?>;
+let saldo = <?php echo (int)$_SESSION['saldo']; ?>;
+const saldoHeader = document.getElementById('saldoHeader');
+
+// elemen
+const sel = document.getElementById('kendSelect');
+const lamaEl = document.getElementById('lama');
+const topupEl = document.getElementById('topup');
+
+const pvKend = document.getElementById('pvKend');
+const pvKat = document.getElementById('pvKat');
+const pvHarga = document.getElementById('pvHarga');
+const pvDur = document.getElementById('pvDur');
+const pvAwal = document.getElementById('pvAwal');
+const pvDiskRow = document.getElementById('pvDiskRow');
+const pvDisk = document.getElementById('pvDisk');
+const pvTotal = document.getElementById('pvTotal');
+const pvCash = document.getElementById('pvCash');
+const pvSaldoNow = document.getElementById('pvSaldoNow');
+const pvSaldoAfter = document.getElementById('pvSaldoAfter');
+const pvImg = document.getElementById('pvImg');
+const pvTag = document.getElementById('pvTag');
+
+// format Rp
+const rup = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+
+// update preview
+function updatePreview(){
+  const idx = parseInt(sel?.value || 0);
+  const item = DATA[idx] || DATA[0];
+  const jam = Math.max(1, parseInt(lamaEl?.value || 1));
+  const top = Math.max(0, parseInt(topupEl?.value || 0));
+
+  const hargaAwal = item.harga * jam;
+  const diskon = isMember ? 0.10 * hargaAwal : 0;
+  const cashback = isMember ? 0.05 * hargaAwal : 0.02 * hargaAwal;
+  const total = hargaAwal - diskon;
+
+  let saldoPreview = saldo + (top > 0 ? top : 0);
+  let sisa = saldoPreview - total;
+
+  pvKend.textContent = item.nama;
+  pvKat.textContent = item.kategori || '-';
+  pvHarga.textContent = item.harga > 0 ? rup(item.harga) : '-';
+  pvDur.textContent = jam + ' jam';
+  pvAwal.textContent = hargaAwal>0 ? rup(hargaAwal) : '-';
+  if (diskon > 0){
+    pvDiskRow.style.display = '';
+    pvDisk.textContent = '- ' + rup(diskon);
+  } else {
+    pvDiskRow.style.display = 'none';
+  }
+  pvTotal.textContent = total>0 ? rup(total) : '-';
+  pvCash.textContent = rup(Math.round(cashback));
+  pvSaldoNow.textContent = rup(saldoPreview);
+  pvSaldoAfter.textContent = (sisa >= 0) ? rup(sisa) : ('- ' + rup(Math.abs(sisa)) + ' (kurang)');
+  pvImg.src = item.gambar || '';
+  pvTag.textContent = item.nama || '—';
+}
+
+// event listeners
+['change','input'].forEach(ev=>{
+  sel?.addEventListener(ev, updatePreview);
+  lamaEl?.addEventListener(ev, updatePreview);
+  topupEl?.addEventListener(ev, updatePreview);
+});
+updatePreview();
+
+// popup
+const popup = document.getElementById('popup');
+const popupBox = document.getElementById('popupBox');
+function showPopup(type, msg){
+  popup.style.display = 'flex';
+  const title = document.getElementById('popupTitle');
+  const p = document.getElementById('popupMsg');
+  p.textContent = msg;
+  title.textContent = (type==='success'?'Berhasil ✅': (type==='error'?'Gagal ❌':'Info ℹ️'));
+  popupBox.classList.remove('success','error');
+  if(type==='success') popupBox.classList.add('success');
+  if(type==='error') popupBox.classList.add('error');
+}
+function closePopup(){ popup.style.display='none'; }
+
+// show server popup if any
+<?php if($popupMsg): ?>
+  showPopup('<?php echo $popupType; ?>', '<?php echo esc($popupMsg); ?>');
+<?php endif; ?>
+
+// topup modal
+const modal = document.getElementById('modal');
+document.getElementById('openTopup')?.addEventListener('click', ()=> modal.style.display='flex');
+function closeModal(){ modal.style.display='none'; }
+
+// Saldo count-up animation
+(function(){
+  const el = document.getElementById('saldoHeader');
+  if(!el) return;
+  const target = <?php echo (int)$_SESSION['saldo']; ?>;
+  const start = <?php echo (int)$saldo_sebelum; ?>;
+  if (target === start) return;
+  const dur=700, t0 = performance.now();
+  function step(t){
+    const p = Math.min(1, (t - t0)/dur);
+    const v = Math.round(start + (target - start)*p);
+    el.textContent = rup(v);
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+})();
+</script>
+</body>
 </html>
