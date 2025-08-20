@@ -1,213 +1,253 @@
 <?php
 
-//class Kendaraan, Pelanggan, NonMember, Member
-//class untuk menyimpan data kendaraan, pelanggan, dan proses sewa kendaraan
-class Kendaraan {
-    private $namaKendaraan;
-    private $hargaPerJam;
-    private $gambarUrl;
-    private $kategori;
+// class untuk kendaraan
+class Kendaraan
+{
+  private $namaKendaraan;
+  private $hargaPerJam;
+  private $gambarUrl;
+  private $kategori;
 
-    // Constructor untuk inisialisasi data kendaraan
-    public function __construct($namaKendaraan, $hargaPerJam, $gambarUrl, $kategori) {
-        $this->namaKendaraan = $namaKendaraan;
-        $this->hargaPerJam = $hargaPerJam;
-        $this->gambarUrl = $gambarUrl;
-        $this->kategori = $kategori;
-    }
+  // Constructor untuk inisialisasi properti
+  public function __construct($namaKendaraan, $hargaPerJam, $gambarUrl, $kategori)
+  {
+    $this->namaKendaraan = $namaKendaraan;
+    $this->hargaPerJam = $hargaPerJam;
+    $this->gambarUrl = $gambarUrl;
+    $this->kategori = $kategori;
+  }
 
-    // Getter methods untuk mengambil data kendaraan
-    public function getNamaKendaraan() {
-        return $this->namaKendaraan;
-    }
+  // Getter methods untuk mengakses properti
+  // Ini adalah metode yang mengembalikan nilai dari properti yang bersangkutan
+  public function getNamaKendaraan()
+  {
+    return $this->namaKendaraan;
+  }
 
-    public function getHargaPerJam() {
-        return $this->hargaPerJam;
-    }
+  // Mengembalikan harga per jam sewa kendaraan
+  // Harga ini digunakan untuk menghitung total biaya sewa
+  public function getHargaPerJam()
+  {
+    return $this->hargaPerJam;
+  }
 
-    public function getGambarUrl() {
-        return $this->gambarUrl;
-    }
+  // Mengembalikan URL gambar kendaraan
+  // URL ini digunakan untuk menampilkan gambar kendaraan di halaman web
+  public function getGambarUrl()
+  {
+    return $this->gambarUrl;
+  }
 
-    public function getKategori() {
-        return $this->kategori;
-    }
+  // Mengembalikan kategori kendaraan
+  // Kategori ini bisa berupa jenis kendaraan seperti mobil, motor, atau sepeda
+  public function getKategori()
+  {
+    return $this->kategori;
+  }
 }
 
-//class Pelanggan
-//class untuk menyimpan data pelanggan, status, saldo digital, dan proses sewa kendaraan
-class Pelanggan {
-    protected $nama;
-    protected $status;
-    protected $saldoDigital = 0;
+// class untuk pelanggan
+// Ini adalah kelas dasar untuk pelanggan yang akan menyewa kendaraan
+class Pelanggan
+{
+  protected $nama;
+  protected $status;
+  protected $saldoDigital = 0;
 
-    // Constructor untuk inisialisasi data pelanggan
-    public function __construct($nama) {
-        $this->nama = $nama;
-    }
+  // Constructor untuk inisialisasi nama pelanggan
+  public function __construct($nama)
+  {
+    $this->nama = $nama;
+  }
 
-    // Getter methods untuk mengambil data pelanggan
-    public function getNama() {
-        return $this->nama;
-    }
+  // Getter methods untuk mengakses properti
+  // Metode ini mengembalikan nilai dari properti yang bersangkutan
+  public function getNama()
+  {
+    return $this->nama;
+  }
 
-    public function getStatus() {
-        return $this->status;
-    }
+  // Mengembalikan status pelanggan (Member atau Non-Member)
+  // Status ini digunakan untuk menentukan jenis pelanggan dan manfaat yang didapat
+  public function getStatus()
+  {
+    return $this->status;
+  }
 
-    public function getSaldoDigital() {
-        return $this->saldoDigital;
-    }
+  // Mengembalikan saldo digital pelanggan
+  // Saldo ini digunakan untuk melakukan pembayaran sewa kendaraan
+  public function getSaldoDigital()
+  {
+    return $this->saldoDigital;
+  }
 
-    // Metode untuk menampilkan saldo digital
-    public function tampilkanSaldo() {
-        echo "<div class='saldo'>💰 Saldo Anda: <strong>Rp " . number_format($this->saldoDigital, 0, ',', '.') . "</strong></div>";
-    }
+  // Menampilkan saldo digital pelanggan
+  public function tampilkanSaldo()
+  {
+    echo "<div class='saldo'>💰 Saldo Anda: <strong>Rp " . number_format($this->saldoDigital, 0, ',', '.') . "</strong></div>";
+  }
 
-    // Metode untuk top-up saldo digital
-    public function topUp($jumlah) {
-        $this->saldoDigital += $jumlah;
-        echo "<div class='info'>Top-up Rp " . number_format($jumlah, 0, ',', '.') . " berhasil!</div>";
-        $this->tampilkanSaldo();
-    }
+  // Metode untuk menambah saldo digital pelanggan
+  public function topUp($jumlah)
+  {
+    $this->saldoDigital += $jumlah;
+    echo "<div class='info'>Top-up Rp " . number_format($jumlah, 0, ',', '.') . " berhasil!</div>";
+    $this->tampilkanSaldo();
+  }
 
-    // Metode untuk menambahkan cashback ke saldo digital
-    public function tambahCashback($jumlah) {
-        $this->saldoDigital += $jumlah;
-        echo "<div class='info'>🎁 Cashback Rp " . number_format($jumlah, 0, ',', '.') . " telah ditambahkan ke saldo digital.</div>";
-    }
+  // Metode untuk menambah cashback ke saldo digital pelanggan
+  // Cashback ini diberikan sebagai bonus setelah melakukan transaksi sewa
+  public function tambahCashback($jumlah)
+  {
+    $this->saldoDigital += $jumlah;
+    echo "<div class='info'>🎁 Cashback Rp " . number_format($jumlah, 0, ',', '.') . " telah ditambahkan ke saldo digital.</div>";
+  }
 
-    // Metode untuk membayar tagihan sewa kendaraan
-    public function bayar($jumlahTagihan) {
-        if ($this->saldoDigital >= $jumlahTagihan) {
-            $this->saldoDigital -= $jumlahTagihan;
-            echo "<div class='success'>✅ Pembayaran berhasil dipotong dari saldo digital.</div>";
-            return true;
-        } else {
-            echo "<div class='error'>❌ Mohon maaf, saldo Anda kurang.</div>";
-            return false;
-        }
+  // Metode untuk melakukan pembayaran sewa kendaraan
+  // Metode ini memeriksa apakah saldo digital cukup untuk membayar jumlah tagihan
+  public function bayar($jumlahTagihan)
+  {
+    if ($this->saldoDigital >= $jumlahTagihan) {
+      $this->saldoDigital -= $jumlahTagihan;
+      echo "<div class='success'>✅ Pembayaran berhasil dipotong dari saldo digital.</div>";
+      return true;
+    } else {
+      echo "<div class='error'>❌ Mohon maaf, saldo Anda kurang.</div>";
+      return false;
     }
+  }
 }
-//class NonMember dan Member
-//class untuk pelanggan non-member dan member yang mengimplementasikan metode sewa kendaraan
-class NonMember extends Pelanggan {
-    public function __construct($nama) {
-        parent::__construct($nama);
-        $this->status = "Non-Membership";
+
+// class untuk pelanggan Non-Member dan Member
+// Kelas ini mewarisi dari kelas Pelanggan dan menambahkan fungsionalitas khusus
+class NonMember extends Pelanggan
+{
+  public function __construct($nama)
+  {
+    parent::__construct($nama);
+    $this->status = "Non-Membership";
+  }
+
+  // Metode untuk melakukan top-up saldo digital
+  // Metode ini memeriksa apakah jumlah top-up cukup setelah dikurangi biaya admin
+  public function topUp($jumlah)
+  {
+    $biayaAdmin = 1500;
+    $bersih = $jumlah - $biayaAdmin;
+    if ($bersih <= 50000) {
+      echo "<div class='error'>Top-up gagal. Jumlah terlalu kecil setelah dikurangi biaya admin.</div>";
+      return;
+    }
+    $this->saldoDigital += $bersih;
+    echo "<div class='info'>Top-up Rp " . number_format($jumlah, 0, ',', '.') . " berhasil! (Biaya admin: Rp1.500)</div>";
+    $this->tampilkanSaldo();
+  }
+
+  // Metode untuk menyewa kendaraan
+  public function sewa(Kendaraan $kendaraan, $jumlahJam)
+  {
+    $hargaAwal = $kendaraan->getHargaPerJam() * $jumlahJam;
+    $cashback = 0.02 * $hargaAwal;
+    $total = $hargaAwal;
+
+    echo "<div class='container'>";
+    echo "<div class='transaksi'>";
+    echo "<div class='kiri'>";
+    echo "<h3>🤩 Pelanggan: {$this->getNama()} ({$this->getStatus()})</h3>";
+    echo "<div class='info'>";
+    echo "📦 <strong>Kendaraan:</strong> {$kendaraan->getNamaKendaraan()}<br/>";
+    echo "⏳ <strong>Waktu :</strong> $jumlahJam jam<br/>";
+    echo "📁 <strong>Kategori:</strong> {$kendaraan->getKategori()}<br/>";
+    echo "💵 <strong>Harga /Jam:</strong> Rp " . number_format($kendaraan->getHargaPerJam(), 0, ',', '.') . "<br/>";
+    echo "🧾 <strong>Harga Order:</strong> Rp " . number_format($hargaAwal, 0, ',', '.') . "<br/>";
+    echo "💳 <strong>Total Bayar:</strong> Rp " . number_format($total, 0, ',', '.') . "<br/>";
+    echo "🎁 <strong>Cashback (2%):</strong> Rp " . number_format($cashback, 0, ',', '.') . "<br/>";
+    echo "</div>";
+
+    // Memanggil metode bayar untuk memproses pembayaran
+    // Jika pembayaran berhasil, tambahkan cashback ke saldo digital
+    if ($this->bayar($total)) {
+      $this->tambahCashback($cashback);
     }
 
-    // Metode untuk top-up saldo digital dengan biaya admin
-    public function topUp($jumlah) {
-        $biayaAdmin = 1500;
-        $bersih = $jumlah - $biayaAdmin;
-        if ($bersih <= 50000) {
-            echo "<div class='error'>Top-up gagal. Jumlah terlalu kecil setelah dikurangi biaya admin.</div>";
-            return;
-        }
-        $this->saldoDigital += $bersih;
-        echo "<div class='info'>Top-up Rp " . number_format($jumlah, 0, ',', '.') . " berhasil! (Biaya admin: Rp1.500)</div>";
-        $this->tampilkanSaldo();
-    }
-
-    // Metode untuk menyewa kendaraan
-    public function sewa(Kendaraan $kendaraan, $jumlahJam) {
-        $hargaAwal = $kendaraan->getHargaPerJam() * $jumlahJam;
-        $cashback = 0.02 * $hargaAwal;
-        $total = $hargaAwal;
-
-        // Cek apakah saldo cukup untuk membayar
-        echo "<div class='container'>";
-        echo "<div class='transaksi'>";
-        echo "<div class='kiri'>";
-        echo "<h3>🤩 Pelanggan: {$this->getNama()} ({$this->getStatus()})</h3>";
-        echo "<div class='info'>";
-        echo "📦 <strong>Kendaraan:</strong> {$kendaraan->getNamaKendaraan()}<br/>";
-        echo "⏳ <strong>Waktu :</strong> $jumlahJam jam<br/>";
-        echo "📁 <strong>Kategori:</strong> {$kendaraan->getKategori()}<br/>";
-        echo "💵 <strong>Harga /Jam:</strong> Rp " . number_format($kendaraan->getHargaPerJam(), 0, ',', '.') . "<br/>";
-        echo "🧾 <strong>Harga Order:</strong> Rp " . number_format($hargaAwal, 0, ',', '.') . "<br/>";
-        echo "💳 <strong>Total Bayar:</strong> Rp " . number_format($total, 0, ',', '.') . "<br/>";
-        echo "🎁 <strong>Cashback (2%):</strong> Rp " . number_format($cashback, 0, ',', '.') . "<br/>";
-        echo "</div>";
-
-        // Proses pembayaran
-        if ($this->bayar($total)) {
-            $this->tambahCashback($cashback);
-        }
-
-        // Tampilkan saldo digital
-        $this->tampilkanSaldo();
-        echo "</div>";
-        echo "<div class='kanan'>
+    // Menampilkan saldo digital setelah transaksi
+    $this->tampilkanSaldo();
+    echo "</div>";
+    echo "<div class='kanan'>
                 <img src='{$kendaraan->getGambarUrl()}' alt='kendaraan' />
                 <div class='nama-kendaraan'>{$kendaraan->getNamaKendaraan()}</div>
               </div>";
-        echo "</div>";
-        echo "</div>";
-    }
+    echo "</div>";
+    echo "</div>";
+  }
 }
 
-//class Member
-//class untuk pelanggan member yang mengimplementasikan metode sewa kendaraan dengan diskon dan cashback
-class Member extends Pelanggan {
-    public function __construct($nama) {
-        parent::__construct($nama);
-        $this->status = "Membership";
+// class untuk pelanggan Member
+// Kelas ini mewarisi dari kelas Pelanggan dan memberikan diskon khusus untuk anggota
+class Member extends Pelanggan
+{
+  public function __construct($nama)
+  {
+    parent::__construct($nama);
+    $this->status = "Membership";
+  }
+
+  // Metode untuk melakukan top-up saldo digital
+  // Metode ini memeriksa apakah jumlah top-up cukup setelah dikurangi biaya admin
+  public function sewa(Kendaraan $kendaraan, $jumlahJam)
+  {
+    $hargaAwal = $kendaraan->getHargaPerJam() * $jumlahJam;
+    $diskon = 0.10 * $hargaAwal;
+    $cashback = 0.05 * $hargaAwal;
+    $total = $hargaAwal - $diskon;
+
+    echo "<div class='container'>";
+    echo "<div class='transaksi'>";
+    echo "<div class='kiri'>";
+    echo "<h3>👑 Pelanggan: {$this->getNama()} ({$this->getStatus()})</h3>";
+    echo "<div class='info'>";
+    echo "📦 <strong>Kendaraan:</strong> {$kendaraan->getNamaKendaraan()}<br/>";
+    echo "⏳ <strong>Waktu :</strong> $jumlahJam jam<br/>";
+    echo "📁 <strong>Kategori:</strong> {$kendaraan->getKategori()}<br/>";
+    echo "💵 <strong>Harga /Jam:</strong> Rp " . number_format($kendaraan->getHargaPerJam(), 0, ',', '.') . "<br/>";
+    echo "🧾 <strong>Harga Order:</strong> Rp " . number_format($hargaAwal, 0, ',', '.') . "<br/>";
+    echo "🔖 <strong>Diskon (10%):</strong> Rp " . number_format($diskon, 0, ',', '.') . "<br/>";
+    echo "💳 <strong>Total :</strong> Rp " . number_format($total, 0, ',', '.') . "<br/>";
+    echo "🎁 <strong>Cashback (5%):</strong> Rp " . number_format($cashback, 0, ',', '.') . "<br/>";
+    echo "</div>";
+
+    // Memanggil metode bayar untuk memproses pembayaran
+    // Jika pembayaran berhasil, tambahkan cashback ke saldo digital
+    if ($this->bayar($total)) {
+      $this->tambahCashback($cashback);
     }
 
-    // Metode untuk top-up saldo digital
-    public function sewa(Kendaraan $kendaraan, $jumlahJam) {
-        $hargaAwal = $kendaraan->getHargaPerJam() * $jumlahJam;
-        $diskon = 0.10 * $hargaAwal;
-        $cashback = 0.05 * $hargaAwal;
-        $total = $hargaAwal - $diskon;
-
-        // Cek apakah saldo cukup untuk membayar
-        echo "<div class='container'>";
-        echo "<div class='transaksi'>";
-        echo "<div class='kiri'>";
-        echo "<h3>👑 Pelanggan: {$this->getNama()} ({$this->getStatus()})</h3>";
-        echo "<div class='info'>";
-        echo "📦 <strong>Kendaraan:</strong> {$kendaraan->getNamaKendaraan()}<br/>";
-        echo "⏳ <strong>Waktu :</strong> $jumlahJam jam<br/>";
-        echo "📁 <strong>Kategori:</strong> {$kendaraan->getKategori()}<br/>";
-        echo "💵 <strong>Harga /Jam:</strong> Rp " . number_format($kendaraan->getHargaPerJam(), 0, ',', '.') . "<br/>";
-        echo "🧾 <strong>Harga Order:</strong> Rp " . number_format($hargaAwal, 0, ',', '.') . "<br/>";
-        echo "🔖 <strong>Diskon (10%):</strong> Rp " . number_format($diskon, 0, ',', '.') . "<br/>";
-        echo "💳 <strong>Total :</strong> Rp " . number_format($total, 0, ',', '.') . "<br/>";
-        echo "🎁 <strong>Cashback (5%):</strong> Rp " . number_format($cashback, 0, ',', '.') . "<br/>";
-        echo "</div>";
-
-        // Proses pembayaran
-        if ($this->bayar($total)) {
-            $this->tambahCashback($cashback);
-        }
-
-        // Tampilkan saldo digital
-        $this->tampilkanSaldo();
-        echo "</div>";
-        echo "<div class='kanan'>
+    // Menampilkan saldo digital setelah transaksi
+    $this->tampilkanSaldo();
+    echo "</div>";
+    echo "<div class='kanan'>
                 <img src='{$kendaraan->getGambarUrl()}' alt='kendaraan' />
                 <div class='nama-kendaraan'>{$kendaraan->getNamaKendaraan()}</div>
               </div>";
-        echo "</div>";
-        echo "</div>";
-    }
+    echo "</div>";
+    echo "</div>";
+  }
 }
 
 // DATA KENDARAAN
 $daftar = [
-    new Kendaraan("Toyota Alphard", 250000, "alphard.jpg", "Mobil - Eksklusif"),
-    new Kendaraan("Mazda 3 Hatchback", 120000, "mazda.jpg", "Mobil - City Car"),
-    new Kendaraan("BMW M3", 300000, "bmw.jpg", "Mobil - Sport Car"),
-    new Kendaraan("Honda CBR250RR", 90000, "cbr.jpg", "Motor - Sport 250cc"),
-    new Kendaraan("Sepeda Gunung United", 35000, "sepeda.jpg", "Sepeda - Gunung"),
+  new Kendaraan("Toyota Alphard", 250000, "alphard.jpg", "Mobil - Eksklusif"),
+  new Kendaraan("Mazda 3 Hatchback", 120000, "mazda.jpg", "Mobil - City Car"),
+  new Kendaraan("BMW M3", 300000, "bmw.jpg", "Mobil - Sport Car"),
+  new Kendaraan("Honda CBR250RR", 90000, "cbr.jpg", "Motor - Sport 250cc"),
+  new Kendaraan("Sepeda Gunung United", 35000, "sepeda.jpg", "Sepeda - Gunung"),
 ];
 ?>
-<!-- HTML untuk tampilan rental kendaraan -->
+
+<!-- HTML untuk menampilkan daftar kendaraan dan form sewa -->
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <title>Rental Kendaraan</title>
@@ -361,65 +401,134 @@ $daftar = [
     .kiri:hover {
       background: rgba(14, 255, 235, 0.07);
     }
+
+    .form-control {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    .btn-submit {
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #00ffe1;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn-submit:hover {
+      background: #00e5cc;
+    }
   </style>
 </head>
+
+<!-- Bagian HTML untuk menampilkan daftar kendaraan dan form sewa -->
 <body>
-  
-<h2>🚗 Daftar Sewa Kendaraan</h2>
-<hr/>
 
-<!-- FORM INPUT -->
-<form method="post" class="container">
-  <h3>🔧 Formulir Sewa Kendaraan</h3>
-  <div class="info">
-    <label>Nama Pelanggan:<br>
-      <input type="text" name="nama" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-    </label><br><br>
+  <h2>🚗 Daftar Sewa Kendaraan</h2>
+  <hr />
 
-    <label>Status Pelanggan:<br>
-      <select name="status" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-        <option value="Member">Membership</option>
-        <option value="NonMember">Non-Membership</option>
-      </select>
-    </label><br><br>
+  <!-- FORM INPUT -->
+  <form method="post" class="container">
+    <h3>🔧 Formulir Sewa Kendaraan</h3>
+    <div class="info">
+      <label>Nama Pelanggan:<br>
+        <input type="text" name="nama" required class="form-control">
+      </label>
 
-    <label>Jumlah Top-Up (Rp):<br>
-      <input type="number" name="topup" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-    </label><br><br>
+      <label>Status Pelanggan:<br>
+        <select name="status" required class="form-control">
+          <option value="Member">Membership</option>
+          <option value="NonMember">Non-Membership</option>
+        </select>
+      </label>
 
-    <label>Pilih Kendaraan:<br>
-      <select name="kendaraan" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-        <?php foreach ($daftar as $index => $k) {
-          echo "<option value='$index'>{$k->getNamaKendaraan()} - Rp " . number_format($k->getHargaPerJam(), 0, ',', '.') . "/jam</option>";
-        } ?>
-      </select>
-    </label><br><br>
+      <label>Jumlah Top-Up (Rp):<br>
+        <input type="number" name="topup" required class="form-control">
+      </label>
 
-    <label>Lama Sewa (jam):<br>
-      <input type="number" name="lama" min="1" required style="width:100%;padding:8px;border-radius:8px;border:none;">
-    </label><br><br>
+      <label>Pilih Kendaraan:<br>
+        <select name="kendaraan" required class="form-control">
+          <!-- Menggunakan foreach untuk menampilkan daftar kendaraan -->
+          <?php foreach ($daftar as $index => $k) {
+            echo "<option value='$index'>{$k->getNamaKendaraan()} - Rp " . number_format($k->getHargaPerJam(), 0, ',', '.') . "/jam</option>";
+          } ?>
+        </select>
+      </label>
 
-    <button type="submit" style="padding:10px 20px;border-radius:10px;border:none;background:#00ffe1;color:#000;font-weight:bold;cursor:pointer;">🚀 Proses Sewa</button>
-  </div>
-</form>
+      <label>Lama Sewa (jam):<br>
+        <input type="number" name="lama" min="1" required class="form-control">
+      </label>
 
-<hr/>
+      <button type="submit" class="btn-submit">🚀 Proses Sewa</button>
+    </div>
+  </form>
 
-<?php
-// Proses form input
-// Jika form disubmit, ambil data dari input dan buat objek pelanggan
+  <hr />
+
+  <?php
+// Konfig Database
+$host = "localhost";
+$user = "root";
+$pass = "";
+$db   = "rental";
+
+// Koneksi
+$conn = new mysqli($host, $user, $pass, $db);
+
+// Cek Koneksi
+if ($conn->connect_error) {
+  die("Koneksi gagal: " . $conn->connect_error);
+}
+
+// class Kendaraan, Pelanggan, NonMember, Member
+
+// Ambil data kendaraan
+$daftar = [];
+$sql = "SELECT * FROM kendaraan";
+$result = $conn->query($sql);
+
+if ($result && $result->num_rows > 0) {
+  while ($row = $result->fetch_assoc()) {
+    $daftar[] = new Kendaraan(
+      $row['namaKendaraan'],
+      $row['hargaPerJam'],
+      $row['gambarUrl'],
+      $row['kategori']
+    );
+  }
+} else {
+  echo "<div class='error'>Data kendaraan belum ada di database.</div>";
+}
+
+// Proses sewa
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nama = $_POST['nama'];
-    $status = $_POST['status'];
-    $topup = (int) $_POST['topup'];
-    $indexKendaraan = (int) $_POST['kendaraan'];
-    $lama = (int) $_POST['lama'];
+  $nama = $_POST['nama'];
+  $status = $_POST['status'];
+  $topup = (int) $_POST['topup'];
+  $indexKendaraan = (int) $_POST['kendaraan'];
+  $lama = (int) $_POST['lama'];
 
-    $pelanggan = ($status === "Member") ? new Member($nama) : new NonMember($nama);
-    $pelanggan->topUp($topup);
+  // Buat object pelanggan (Member / NonMember)
+  $pelanggan = ($status === "Member") ? new Member($nama) : new NonMember($nama);
+
+  // Tambahkan topup
+  $pelanggan->topUp($topup);
+
+  // Proses sewa
+  if (isset($daftar[$indexKendaraan])) {
     $pelanggan->sewa($daftar[$indexKendaraan], $lama);
+  }
 }
 ?>
 
+
 </body>
+
 </html>
