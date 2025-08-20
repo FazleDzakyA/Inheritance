@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 20, 2025 at 01:55 AM
+-- Generation Time: Aug 20, 2025 at 03:30 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -31,7 +31,8 @@ CREATE TABLE `pelanggan` (
   `id_Pelanggan` int(11) NOT NULL,
   `nama` varchar(255) DEFAULT NULL,
   `status` enum('adalah_member','bukan_member') DEFAULT NULL,
-  `saldoDigital` float(10,2) DEFAULT NULL
+  `saldoDigital` float(15,2) DEFAULT NULL,
+  `Jenis_kendaraan` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
