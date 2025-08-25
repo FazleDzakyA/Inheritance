@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 20, 2025 at 03:30 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Waktu pembuatan: 25 Agu 2025 pada 05.58
+-- Versi server: 10.4.32-MariaDB
+-- Versi PHP: 8.4.11
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,7 +24,21 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `pelanggan`
+-- Struktur dari tabel `kendaraan`
+--
+
+CREATE TABLE `kendaraan` (
+  `id_kendaraan` int(11) NOT NULL,
+  `nama_kendaraan` varchar(100) NOT NULL,
+  `jenis_kendaraan` varchar(100) NOT NULL,
+  `harga_kenderaan` int(11) NOT NULL,
+  `gambar_kendaraan` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `pelanggan`
 --
 
 CREATE TABLE `pelanggan` (
@@ -40,20 +54,32 @@ CREATE TABLE `pelanggan` (
 --
 
 --
--- Indexes for table `pelanggan`
+-- Indeks untuk tabel `kendaraan`
+--
+ALTER TABLE `kendaraan`
+  ADD PRIMARY KEY (`id_kendaraan`);
+
+--
+-- Indeks untuk tabel `pelanggan`
 --
 ALTER TABLE `pelanggan`
   ADD PRIMARY KEY (`id_Pelanggan`);
 
 --
--- AUTO_INCREMENT for dumped tables
+-- AUTO_INCREMENT untuk tabel yang dibuang
 --
 
 --
--- AUTO_INCREMENT for table `pelanggan`
+-- AUTO_INCREMENT untuk tabel `kendaraan`
+--
+ALTER TABLE `kendaraan`
+  MODIFY `id_kendaraan` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT untuk tabel `pelanggan`
 --
 ALTER TABLE `pelanggan`
-  MODIFY `id_Pelanggan` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_Pelanggan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

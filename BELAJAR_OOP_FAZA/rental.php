@@ -1,32 +1,34 @@
 <?php
-// rental.php — final single file, rapi & lengkap
 session_start();
+require_once 'db.php';
+if (!isset($_SESSION['nama'])) {
+  header("Location: login.php");
+  exit;
+}
 date_default_timezone_set('Asia/Jakarta');
 
+$mysqli = db();
+
 /* =========================
-   DATA KENDARAAN
-   (TIDAK DIUBAH — PERSIS MILIKMU)
+   DATA KENDARAAN (from DB)
 ========================= */
-$daftar = [
-  ["nama" => "Pilih Kendaraan", "harga" => 0, "gambar" => "NOMADIC - CAFE - john zaki.jpg", "kategori" => ""],
-  ["nama" => "Toyota Alphard", "harga" => 250000, "gambar" => "alphard.jpg", "kategori" => "Mobil - Eksklusif"],
-  ["nama" => "Mazda 3 Hatchback", "harga" => 120000, "gambar" => "mazda.jpg", "kategori" => "Mobil - City Car"],
-  ["nama" => "BMW M3", "harga" => 300000, "gambar" => "bmw.jpg", "kategori" => "Mobil - Sport Car"],
-  ["nama" => "Honda CBR250RR", "harga" => 90000, "gambar" => "cbr.jpg", "kategori" => "Motor - Sport 250cc"],
-  ["nama" => "Sepeda Gunung United", "harga" => 35000, "gambar" => "sepeda.jpg", "kategori" => "Sepeda - Gunung"],
-];
+$daftar = [];
+$res = $mysqli->query("SELECT * FROM kendaraan");
+while ($row = $res->fetch_assoc()) {
+  $daftar[] = [
+    "nama" => $row['nama_kendaraan'],
+    "harga" => $row['harga_kenderaan'],
+    "gambar" => $row['gambar_kendaraan'],
+    "kategori" => $row['jenis_kendaraan']
+  ];
+}
+array_unshift($daftar, ["nama" => "Pilih Kendaraan", "harga" => 0, "gambar" => "", "kategori" => ""]);
 
 /* =========================
    HELPERS
 ========================= */
-function esc($s)
-{
-  return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8');
-}
-function rupiah($n)
-{
-  return 'Rp ' . number_format((int) $n, 0, ',', '.');
-}
+function esc($s) { return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8'); }
+function rupiah($n) { return 'Rp ' . number_format((int) $n, 0, ',', '.'); }
 
 /* =========================
    INIT SESSION
@@ -41,34 +43,15 @@ $saldo_sebelum = $_SESSION['saldo'];
    POPUP STATE
 ========================= */
 $popupMsg = null;
-$popupType = 'info'; // success | error | info
+$popupType = 'info';
 
 /* =========================
    ACTIONS
 ========================= */
-// LOGIN
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'login') {
-  $nama = trim($_POST['nama'] ?? '');
-  $status = (($_POST['status'] ?? 'NonMember') === 'Member') ? 'Member' : 'NonMember';
-  if ($nama === '') {
-    $popupMsg = "Nama tidak boleh kosong.";
-    $popupType = 'error';
-  } else {
-    $_SESSION['nama'] = $nama;
-    $_SESSION['status'] = $status;
-    // reset lifetime jika user baru login? biarkan session sebelumnya
-    $popupMsg = "Login berhasil! Selamat datang, {$nama}.";
-    $popupType = 'success';
-  }
-}
-
-// TOP-UP (modal / form topup)
+// TOP-UP
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'topup') {
   $nom = (int) ($_POST['nominal'] ?? 0);
   $status = $_SESSION['status'] ?? 'NonMember';
-
-  // Jika Member dan belum pernah top-up (lifetime topup == 0) dan saldo < 5 juta,
-  // maka wajib top-up awal minimal 5.000.000
   $member_requires_initial = ($status === 'Member' && ($_SESSION['lifetime']['topup'] ?? 0) == 0 && ($_SESSION['saldo'] ?? 0) < 5000000);
 
   if ($member_requires_initial && $nom < 5000000) {
@@ -80,9 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'topup')
   } else {
     $_SESSION['saldo'] += $nom;
     $_SESSION['lifetime']['topup'] += $nom;
+    // Update saldo in DB
+    $id = $_SESSION['id_Pelanggan'];
+    $mysqli->query("UPDATE pelanggan SET saldoDigital = saldoDigital + $nom WHERE id_Pelanggan = $id");
     $popupMsg = "Top-up berhasil: +" . rupiah($nom) . " (Saldo sekarang: " . rupiah($_SESSION['saldo']) . ")";
     $popupType = 'success';
-    // riwayat topup
     array_unshift($_SESSION['riwayat'], [
       'tanggal' => date("d-m-Y H:i:s"),
       'nama' => $_SESSION['nama'] ?? '-',
@@ -92,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'topup')
       'hargaAwal' => $nom,
       'diskon' => 0,
       'cashback' => 0,
-      'total' => -$nom, // tampil + di tabel
+      'total' => -$nom,
       'gambar' => '',
       'status' => $_SESSION['status'] ?? 'NonMember',
       'tipe' => 'TOPUP'
@@ -100,15 +85,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'topup')
   }
 }
 
-// SEWA (form sewa) — termasuk opsi topup dari form sewa
+// SEWA
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'sewa' && isset($_SESSION['nama'])) {
   $idx = (int) ($_POST['kendaraan'] ?? 0);
   $lama = max(1, (int) ($_POST['lama'] ?? 1));
   $topup = max(0, (int) ($_POST['topup'] ?? 0));
-
   $topup_failed = false;
 
-  // Jika user meminta topup dari form sewa, jalankan topup dulu (dengan aturan Member)
+  // Topup from sewa form
   if ($topup > 0) {
     $nom = $topup;
     $status = $_SESSION['status'] ?? 'NonMember';
@@ -124,6 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'sewa' &
     } else {
       $_SESSION['saldo'] += $nom;
       $_SESSION['lifetime']['topup'] += $nom;
+      $id = $_SESSION['id_Pelanggan'];
+      $mysqli->query("UPDATE pelanggan SET saldoDigital = saldoDigital + $nom WHERE id_Pelanggan = $id");
       array_unshift($_SESSION['riwayat'], [
         'tanggal' => date("d-m-Y H:i:s"),
         'nama' => $_SESSION['nama'],
@@ -143,9 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'sewa' &
     }
   }
 
-  // jika topup gagal, hentikan proses sewa
   if ($topup_failed) {
-    // nothing else, popup sudah diset
+    // nothing else
   } else {
     $kend = $daftar[$idx] ?? $daftar[0];
     if (($kend['harga'] ?? 0) <= 0) {
@@ -154,7 +139,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'sewa' &
     } else {
       $hargaAwal = $kend['harga'] * $lama;
       $status = $_SESSION['status'] ?? 'NonMember';
-      // aturan diskon/cashback
       $diskon = ($status === 'Member') ? 0.10 * $hargaAwal : 0;
       $cashback = ($status === 'Member') ? 0.05 * $hargaAwal : 0.02 * $hargaAwal;
       $total = $hargaAwal - $diskon;
@@ -163,6 +147,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'sewa' &
         $_SESSION['saldo'] -= $total;
         $_SESSION['saldo'] += round($cashback);
         $_SESSION['lifetime']['sewa'] += $total;
+        $id = $_SESSION['id_Pelanggan'];
+        // Update saldo in DB
+        $mysqli->query("UPDATE pelanggan SET saldoDigital = saldoDigital - $total + " . round($cashback) . " WHERE id_Pelanggan = $id");
 
         $ent = [
           'tanggal' => date("d-m-Y H:i:s"),
@@ -206,364 +193,7 @@ if (isset($_GET['logout'])) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Rent Garage — Sewa Kendaraan</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg1: #0e0f12;
-      --bg2: #0a0b0d;
-      --panel: rgba(255, 255, 255, .04);
-      --primary: #00eaff;
-      --primary2: #00ffbf;
-      --text: #eef6fa;
-      --muted: #9fb0bf;
-      --danger: #ff6b6b;
-      --success: #2ee6a6;
-      --select: rgba(255, 255, 255, 0.03);
-    }
-
-    * {
-      box-sizing: border-box
-    }
-
-    html,
-    body {
-      margin: 0
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      color: var(--text);
-      min-height: 100vh;
-      padding: 28px;
-      background:
-        radial-gradient(1200px 600px at 15% -10%, rgba(0, 234, 255, .05), transparent 60%),
-        radial-gradient(1000px 500px at 90% 10%, rgba(0, 255, 191, .04), transparent 60%),
-        linear-gradient(135deg, var(--bg1), var(--bg2));
-    }
-
-    /* layout */
-    .container {
-      max-width: 1150px;
-      margin: 0 auto
-    }
-
-    header.header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 18px
-    }
-
-    .brand {
-      color: var(--primary);
-      font-weight: 700;
-      font-size: 20px;
-      letter-spacing: .3px
-    }
-
-    button,
-    a.button {
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 700
-    }
-
-    /* panel */
-    .panel {
-      background: var(--panel);
-      border-radius: 14px;
-      padding: 18px;
-      border: 1px solid rgba(255, 255, 255, .06);
-      box-shadow: 0 12px 40px rgba(2, 6, 23, .6);
-    }
-
-    /* inputs */
-    label {
-      display: block;
-      margin: 10px 0 6px;
-      font-weight: 600;
-      color: var(--muted)
-    }
-
-    input[type="text"],
-    input[type="number"],
-    select {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: none;
-      outline: none;
-      background: var(--select);
-      color: var(--text);
-      font-size: 14px;
-    }
-
-    input:focus,
-    select:focus {
-      box-shadow: 0 10px 30px rgba(0, 234, 255, .05)
-    }
-
-    /* styled select wrapper + arrow */
-    .select-wrap {
-      position: relative
-    }
-
-    .select-wrap:after {
-      content: '';
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 10px;
-      height: 10px;
-      border-right: 2px solid rgba(255, 255, 255, .7);
-      border-bottom: 2px solid rgba(255, 255, 255, .7);
-      transform: translateY(-60%) rotate(45deg);
-      opacity: .9;
-      pointer-events: none;
-    }
-
-    /* Make options readable when dropdown opens (browser-dependent) */
-    select option {
-      color: #001;
-      background: #fff;
-    }
-
-    /* buttons */
-    .btn {
-      padding: 12px 14px;
-      background: linear-gradient(90deg, var(--primary2), var(--primary));
-      color: #000;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer
-    }
-
-    .btn.ghost {
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, .08);
-      color: var(--text)
-    }
-
-    .btn.small {
-      padding: 8px 10px;
-      border-radius: 10px
-    }
-
-    /* saldo */
-    .saldo {
-      display: inline-block;
-      padding: 10px 14px;
-      border-radius: 12px;
-      background: linear-gradient(90deg, rgba(0, 234, 255, .06), rgba(0, 255, 191, .03));
-      color: #001;
-      font-weight: 800
-    }
-
-    /* grid */
-    .grid {
-      display: grid;
-      gap: 14px
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px
-    }
-
-    .cols {
-      display: grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap: 18px
-    }
-
-    @media(max-width:980px) {
-      .cols {
-        grid-template-columns: 1fr
-      }
-    }
-
-    /* preview card */
-    .preview {
-      display: grid;
-      grid-template-columns: 1fr .9fr;
-      gap: 16px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, .02), rgba(255, 255, 255, .01));
-      border-radius: 14px;
-      padding: 14px;
-      border: 1px solid rgba(255, 255, 255, .03)
-    }
-
-    @media(max-width:920px) {
-      .preview {
-        grid-template-columns: 1fr
-      }
-    }
-
-    .chip {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(0, 234, 255, .09);
-      color: var(--primary)
-    }
-
-    .dl {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 8px 12px;
-      margin-top: 12px
-    }
-
-    .dl dt {
-      color: var(--muted);
-      font-size: 13px
-    }
-
-    .dl dd {
-      margin: 0;
-      font-weight: 700
-    }
-
-    /* image box */
-    .imgbox {
-      width: 100%;
-      height: 280px;
-      overflow: hidden;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, .02)
-    }
-
-    .imgbox img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block
-    }
-
-    /* last order */
-    .order-detail {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      margin-top: 12px;
-      border-radius: 12px;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, .02), transparent);
-      border: 1px solid rgba(255, 255, 255, .03)
-    }
-
-    .order-detail .img-lg {
-      width: 45%;
-      min-width: 220px;
-      height: 220px;
-      overflow: hidden;
-      border-radius: 12px
-    }
-
-    .order-detail .img-lg img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover
-    }
-
-    /* table */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 8px
-    }
-
-    th,
-    td {
-      padding: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, .06);
-      font-size: 13px;
-      text-align: left
-    }
-
-    th {
-      color: var(--primary)
-    }
-
-    /* hints */
-    .small {
-      color: var(--muted);
-      font-size: 12.6px
-    }
-
-    /* popup */
-    #popup {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      backdrop-filter: blur(6px)
-    }
-
-    .popup-box {
-      min-width: 320px;
-      max-width: 420px;
-      background: #0c1116;
-      border-radius: 12px;
-      padding: 18px;
-      border: 1px solid rgba(255, 255, 255, .07)
-    }
-
-    .popup-box.success {
-      border-color: rgba(46, 230, 166, .28)
-    }
-
-    .popup-box.error {
-      border-color: rgba(255, 107, 107, .28)
-    }
-
-    /* modal */
-    #modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .5);
-      align-items: center;
-      justify-content: center;
-      z-index: 999
-    }
-
-    .modal-card {
-      background: #0b1116;
-      padding: 16px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, .07);
-      width: 320px
-    }
-
-    /* sticky header style (updated) */
-    .header-sticky {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      padding: 12px 0;
-      background: linear-gradient(180deg, rgba(6, 10, 16, .6), rgba(6, 10, 16, .9));
-      backdrop-filter: blur(6px);
-      transition: box-shadow 0.28s ease, transform 0.18s ease;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-    }
-
-    body.scrolled .header-sticky {
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28);
-    }
-
-    /* additional: make select options clearly visible on mobile/desktop */
-    @media (max-width:480px) {
-      select {
-        font-size: 16px;
-        padding: 12px;
-      }
-    }
-  </style>
+  <link href="rentalStyle.css" rel="stylesheet">
 </head>
 
 <body>
@@ -586,29 +216,6 @@ if (isset($_GET['logout'])) {
 
     <?php if (!isset($_SESSION['nama'])): ?>
       <!-- LOGIN -->
-      <section class="panel" style="max-width:420px;margin:10vh auto 0">
-        <h2 style="margin:0 0 6px;color:var(--primary)">🔐 Masuk untuk Sewa</h2>
-        <p class="small">Isi nama & pilih status (Member / Non-Member).</p>
-        <form method="post" class="grid" style="margin-top:12px">
-          <input type="hidden" name="aksi" value="login">
-          <div>
-            <label>Nama</label>
-            <input type="text" name="nama" placeholder="Nama Anda" required>
-          </div>
-          <div>
-            <label>Status Pelanggan</label>
-            <div class="select-wrap">
-              <select name="status" required>
-                <option value="Member">Member</option>
-                <option value="NonMember">Non-Member</option>
-              </select>
-            </div>
-            <p class="small" style="margin-top:6px">Info: disarankan untuk Member isi saldo awal &gt; Rp5.000.000 agar
-              nyaman transaksi.</p>
-          </div>
-          <button class="btn" type="submit">Masuk</button>
-        </form>
-      </section>
     <?php else: ?>
       <!-- MAIN -->
       <main class="cols">
@@ -928,10 +535,11 @@ if (isset($_GET['logout'])) {
       const title = document.getElementById('popupTitle');
       title.textContent = (type === 'success' ? 'Berhasil ✅' : type === 'error' ? 'Gagal ❌' : 'Info ℹ️');
       popupBox.classList.remove('success', 'error');
-      if (type === 'success') popupBox.classList.add('success');
-      if (type === 'error') popupBox.classList.add('error');
     }
-    function closePopup() { popup.style.display = 'none'; }
+
+    function closePopup() {
+      popup.style.display = 'none';
+    }
     window.closePopup = closePopup;
 
     // Server-triggered popup
